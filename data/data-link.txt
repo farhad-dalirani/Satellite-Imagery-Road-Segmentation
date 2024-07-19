@@ -1,0 +1,13 @@
+(i) Download tha "Massachusetts Roads Dataset" from here:
+
+    https://www.kaggle.com/datasets/balraj98/massachusetts-roads-dataset/
+
+
+(ii) After Download the data folder should look like this:
+
+    data
+    ├── data-link.txt
+    └── massachusetts-roads-dataset
+        ├── label_class_dict.csv
+        ├── metadata.csv
+        └── tiff
