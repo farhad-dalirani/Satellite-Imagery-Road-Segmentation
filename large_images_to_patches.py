@@ -79,7 +79,7 @@ class LargeImagesToPatches:
             for j in range(0, self.images_hw[1], self.patch_size):
                 
                 # ij-patch of image
-                crop_img = np.ones(shape=(self.patch_size, self.patch_size, 3))
+                crop_img = np.zeros(shape=(self.patch_size, self.patch_size, 3))
                 tmp_img = image[i:min(i+self.patch_size, self.images_hw[0]), j:min(j+self.patch_size, self.images_hw[1]), :]
                 crop_img[0:tmp_img.shape[0], 0:tmp_img.shape[1], :] = tmp_img
                 
