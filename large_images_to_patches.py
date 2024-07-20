@@ -1,15 +1,8 @@
 import json
-import math
 import os
 import numpy as np
-from PIL import Image
-import pandas as pd
-import torch
-from torch.utils.data import Dataset
-import torchvision
 import shutil
 import cv2 as cv
-import matplotlib.pyplot as plt
 
 
 class LargeImagesToPatches:
