@@ -1,0 +1,11 @@
+{
+    "data_dir": "data/massachusetts-roads-dataset/tiff",
+    "data_sets": ["train", "val", "test"],
+    "dataset_image_size": [1500, 1500],
+
+    "train_patch_size": 516,
+    "train_overlap_between_patches": 16, 
+
+    "test_patch_size": 500,
+    "test_overlap_between_patches": 0
+}

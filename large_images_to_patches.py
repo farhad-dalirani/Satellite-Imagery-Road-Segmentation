@@ -1,3 +1,4 @@
+import json
 import math
 import os
 import numpy as np
@@ -133,18 +134,34 @@ class LargeImagesToPatches:
 
 if __name__ == '__main__':
     
+    # Define the path to the JSON configuration file
+    config_file_path = 'config/config.json'
+
+    # Open and read the JSON file
+    with open(config_file_path, 'r') as file:
+        config = json.load(file)
+
+    list_patch_sizes = [
+        config['train_patch_size'], 
+        config['test_patch_size'], 
+        config['test_patch_size']]
+    list_overlap_between_patches = [
+        config['train_overlap_between_patches'], 
+        config['test_overlap_between_patches'], 
+        config['test_overlap_between_patches']]
+
     # Convert train, validation and test set to smaller patches
-    for set_i in ['train', 'val', 'test']:
+    for idx, set_i in enumerate(config['data_sets']):
         
         print("Processing set {}".format(set_i))
         
         data = LargeImagesToPatches(
-            in_image_dir='data/massachusetts-roads-dataset/tiff/{}'.format(set_i),
-            in_label_dir='data/massachusetts-roads-dataset/tiff/{}_labels'.format(set_i), 
-            out_image_dir='data/massachusetts-roads-dataset/tiff/{}_patched'.format(set_i), 
-            out_label_dir='data/massachusetts-roads-dataset/tiff/{}_labels_patched'.format(set_i),
-            images_hw= (1500, 1500),
-            patch_size=515,
-            overlap_between_patches=15)
+            in_image_dir=os.path.join(config['data_dir'], set_i),
+            in_label_dir=os.path.join(config['data_dir'], '{}_labels'.format(set_i)), 
+            out_image_dir=os.path.join(config['data_dir'], '{}_patched'.format(set_i)), 
+            out_label_dir=os.path.join(config['data_dir'], '{}_labels_patched'.format(set_i)),
+            images_hw= tuple(config['dataset_image_size']),
+            patch_size=list_patch_sizes[idx],
+            overlap_between_patches=list_overlap_between_patches[idx])
         
         data.convert_dataset_from_images_to_patches()
