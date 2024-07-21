@@ -7,5 +7,12 @@
     "train_overlap_between_patches": 16, 
 
     "test_patch_size": 500,
-    "test_overlap_between_patches": 0
+    "test_overlap_between_patches": 0,
+
+
+    "train_batch_size": 16,
+
+
+
+    "test_batch_size": 16
 }
