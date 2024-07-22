@@ -75,10 +75,6 @@ class MRDDataset(Dataset):
         # Convert 3 channel to 1 since with have 2 class
         mask_tensor = torch.mean(mask_tensor, axis=0).to(torch.float32)
         
-        # Use thresholding on mask since interpolation in data transformation can change values
-        mask_tensor[mask_tensor >= 0.5] = 1.0
-        mask_tensor[mask_tensor < 0.5] = 0.0
-        
         return image_tensor, mask_tensor
 
         
@@ -114,7 +110,7 @@ if __name__ == '__main__':
     # Define the joint transformations for both image and mask
     joint_transform_train = transforms.Compose([
         transforms.RandomRotation(degrees=30),
-        transforms.RandomResizedCrop(size=config['test_patch_size'], scale=(0.75, 1)), # for more than two class change to  interpolation=transforms.InterpolationMode.NEAREST
+        transforms.RandomResizedCrop(size=config['test_patch_size'], scale=(0.75, 1), interpolation=transforms.InterpolationMode.NEAREST), 
         transforms.RandomHorizontalFlip(),
         transforms.ToTensor()])
     joint_transform_test = transforms.Compose([transforms.ToTensor()])
