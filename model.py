@@ -6,6 +6,7 @@ from PIL import Image
 import pandas as pd
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from torch.utils.data import Dataset
 from torchvision import transforms
 import random
@@ -66,7 +67,53 @@ class ModifiedResNet50(nn.Module):
 
         return x1, x2, x3, x4, x5
 
+
+class ConvDecoderBlock(nn.Module):
+
+    def __init__(self, in_channels, out_channels, skip_channel=0, last_block=False):
+        super(ConvDecoderBlock, self).__init__()
+
+        self.last_block=last_block
+
+        self.conv1 = nn.Conv2d(in_channels=in_channels+skip_channel, out_channels=out_channels, kernel_size=3, padding=1)
+        self.bn1 = nn.BatchNorm2d(out_channels)
+
+        self.conv2 = nn.Conv2d(in_channels=out_channels, out_channels=out_channels, kernel_size=3, padding=1)
+        if self.last_block == False:
+            self.bn2 = nn.BatchNorm2d(out_channels)
+
+        self.act = nn.ReLU()
+
+    def forward(self, x, skip=None):
+        
+        # To increase the spatial resolution, interpolate the input feature map.
+        x = F.interpolate(x, scale_factor=2, mode="nearest")
+        
+        # Concatenate feature map from encoder
+        if skip is not None:
+            x = torch.cat([x, skip], dim=1)
+
+        x = self.conv1(x)
+        x = self.act(x)
+        x = self.bn1(x)
+
+        x = self.conv2(x)
+        
+        if self.last_block == False:
+            x = self.act(x)
+            x = self.bn2(x)
+
+        return x
+
+
+class ConvDecoder(nn.Module):
+
+    def __init__():
+        pass
+
+
     
+
 
 
 if __name__ == '__main__':
@@ -99,3 +146,13 @@ if __name__ == '__main__':
     print(f"Stage 3 Output: {stage3_output.shape}")
     print(f"Stage 4 Output: {stage4_output.shape}")
     print(f"Stage 4 Output: {stage5_output.shape}")
+
+
+    dec_block = ConvDecoderBlock(in_channels=20, out_channels=10, skip_channel=5, last_block=True)
+    input_tensor = torch.randn(1, 20, 16, 16)
+    skip_tensor = torch.randn(1, 5, 32, 32)
+    output = dec_block(input_tensor, skip_tensor)
+    print("")
+    print(f"Output: {output.shape}")
+
+
