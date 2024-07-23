@@ -11,10 +11,24 @@ from torchvision.transforms import Compose, ToTensor, Normalize
 from loss import DiceBCELoss
 from model import UnetLikeSegmentatorModel
 from dataset import MRDDataset, JointTransform
+from torch.optim.lr_scheduler import LambdaLR
 
 
 def train_model(model, train_loader, val_loader, test_loader, num_epochs=25, lr=1e-4, checkpoint_path='saved_model/best_model.pth'):
+    """
+    Trains a given model using the specified data loaders, optimizer, and loss function, while tracking the best validation score
+    and saving the best model. Additionally, evaluates the model on the test dataset after training.
     
+    Args:
+        model (torch.nn.Module): The neural network model to be trained.
+        train_loader (torch.utils.data.DataLoader): DataLoader for the training dataset.
+        val_loader (torch.utils.data.DataLoader): DataLoader for the validation dataset.
+        test_loader (torch.utils.data.DataLoader): DataLoader for the test dataset.
+        num_epochs (int, optional): Number of epochs to train the model. Defaults to 25.
+        lr (float, optional): Learning rate for the optimizer. Defaults to 1e-4.
+        checkpoint_path (str, optional): Path to save the best model. Defaults to 'saved_model/best_model.pth'.
+    """
+
     # Define device
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model.to(device)
@@ -23,8 +37,9 @@ def train_model(model, train_loader, val_loader, test_loader, num_epochs=25, lr=
     criterion = DiceBCELoss()  
     optimizer = optim.Adam(model.parameters(), lr=lr)
     
-    # scheduler = optim.lr_scheduler.LambdaLR(optimizer, lr_lambda)
-    
+    # Define the scheduler
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, min_lr=config['train_min_lr'])
+
     # TensorBoard writer
     writer = SummaryWriter()
 
@@ -53,15 +68,13 @@ def train_model(model, train_loader, val_loader, test_loader, num_epochs=25, lr=
             
             # Backward pass and optimize
             loss.backward()
-            optimizer.step()
-
-            # Update learning rate
-            # scheduler.step()  
+            optimizer.step() 
             
+            # Loss of batch
             running_loss += loss.item() * inputs.size(0)
 
             print(">    Epoch {}, Batch {}/{}, Average loss in batch: {}".format(epoch, batch_i, total_batch, loss.item()))
-            batch_i += 1
+            batch_i += 1 
 
         epoch_loss = running_loss / len(train_loader.dataset)
         writer.add_scalar('Training Loss', epoch_loss, epoch)
@@ -88,6 +101,13 @@ def train_model(model, train_loader, val_loader, test_loader, num_epochs=25, lr=
             torch.save(model.state_dict(), checkpoint_path)
             print(f"Model saved with loss: {best_val_loss:.4f}")
 
+        # Log learning rate
+        current_lr = optimizer.param_groups[0]['lr']
+        writer.add_scalar('Learning Rate', current_lr, epoch)
+        
+        # Update learning rate at the end of each epoch
+        scheduler.step(val_loss)
+
     # Test phase
     model.load_state_dict(torch.load(checkpoint_path))
     model.eval()
@@ -109,8 +129,6 @@ def train_model(model, train_loader, val_loader, test_loader, num_epochs=25, lr=
 
 if __name__ == '__main__':
     
-    # Data
-
     # Define the path to the JSON configuration file
     config_file_path = 'config/config.json'
 
