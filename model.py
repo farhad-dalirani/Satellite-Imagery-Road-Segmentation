@@ -1,19 +1,8 @@
-import json
-import numpy as np
-import math
-import os
-from PIL import Image
-import pandas as pd
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.utils.data import Dataset
-from torchvision import transforms
-import random
-import matplotlib.pyplot as plt
-from utils import tensor_image_to_pil_image, tensor_mask_to_pil_image
-from torch.utils.data import Dataset, DataLoader
 import torchvision.models as models
+from torchvision.models import ResNet50_Weights
 
 class ModifiedResNet50(nn.Module):
     """
@@ -35,7 +24,7 @@ class ModifiedResNet50(nn.Module):
         super(ModifiedResNet50, self).__init__()
         
         # Load a pre-trained ResNet-50 model
-        self.resnet50 = models.resnet50(pretrained=True)
+        self.resnet50 = models.resnet50(weights=ResNet50_Weights.DEFAULT)
         
         # Remove the global average pooling and fully connected layers
         self.features = nn.Sequential(*list(self.resnet50.children())[:-2])
@@ -69,7 +58,20 @@ class ModifiedResNet50(nn.Module):
 
 
 class ConvDecoderBlock(nn.Module):
-
+    """
+    Building block of a Convolutional Decoder for image segmentation or similar tasks.
+    
+    This block consists of two convolutional layers, each followed by a Batch Normalization layer
+    and a ReLU activation function. The first convolutional layer also handles the concatenation 
+    of skip connections from the encoder. This block can optionally be the last block in the decoder,
+    in which case it omits the second Batch Normalization layer.
+    
+    Attributes:
+    - in_channels (int): Number of input channels.
+    - out_channels (int): Number of output channels.
+    - skip_channel (int): Number of channels from the skip connection. Default is 0.
+    - last_block (bool): Flag to indicate if this is the last block in the decoder. Default is False.
+    """
     def __init__(self, in_channels, out_channels, skip_channel=0, last_block=False):
         super(ConvDecoderBlock, self).__init__()
 
@@ -107,27 +109,85 @@ class ConvDecoderBlock(nn.Module):
 
 
 class ConvDecoder(nn.Module):
-
-    def __init__():
-        pass
-
-
+    """
+    Convolutional Decoder consisting of a sequence of ConvDecoderBlock modules.
     
+    This class constructs a decoder with a specified number of blocks, where each block can optionally 
+    receive skip connections from an encoder. The last block in the decoder does not include a Batch 
+    Normalization layer after the second convolutional layer.
+    
+    Attributes:
+    - list_in_channels (list of int): List of input channels for each decoder block.
+    - list_out_channels (list of int): List of output channels for each decoder block.
+    - list_skip_channels (list of int): List of skip connection channels for each decoder block.
+    - num_blocks (int): Number of decoder blocks. Default is 5.
+    """
 
+    def __init__(self, list_in_channels, list_out_channels, list_skip_channels, num_blocks=5):
+        super(ConvDecoder, self).__init__()
+
+        self.num_blocks = num_blocks
+
+        self.neck = nn.Identity()
+
+        # Create blocks of decoder
+        list_blocks = [ConvDecoderBlock(
+                            in_channels=list_in_channels[i], 
+                            out_channels=list_out_channels[i], 
+                            skip_channel=list_skip_channels[i], 
+                            last_block=(i == (num_blocks-1))) for i in range(num_blocks)]
+        self.blocks = nn.ModuleList(list_blocks)
+
+    def forward(self, features):
+        
+        x = self.neck(features[0])
+        for i in range(self.num_blocks):
+            if i != (self.num_blocks-1):
+                x = self.blocks[i](x, features[i+1])
+            else:
+                x = self.blocks[i](x)
+        
+        return x
+
+
+class UnetLikeSegmentatorModel(nn.Module):
+    """
+    A class to implement a U-Net like segmentation model.
+    """
+
+    def __init__(self):
+        super(UnetLikeSegmentatorModel, self).__init__()
+
+        # Encoder to extract features from input image at multiple level
+        self.encoder = ModifiedResNet50()
+        
+        # Number of output channel at each stage of encoder from last stage to the first 
+        self.encoder_featuremap_out_channels = [2048, 1024, 512, 256, 64]
+        # Number of output channel of each block of decoder
+        self.ecoder_each_block_out_channels = self.encoder_featuremap_out_channels[1::] + [1]
+        # Number of channel of skip connection that come from encoder to each decoder block 
+        self.ecoder_each_block_skip_connection_in_channels = self.encoder_featuremap_out_channels[1::] + [0]
+
+        # Decoder to convert hierarchical feature maps from the encoder to a segmentation mask
+        self.decoder = ConvDecoder(
+                        list_in_channels=self.encoder_featuremap_out_channels, 
+                        list_out_channels=self.ecoder_each_block_out_channels, 
+                        list_skip_channels=self.ecoder_each_block_skip_connection_in_channels,
+                        num_blocks=len(self.encoder_featuremap_out_channels))
+
+    def forward(self, x):
+        # Feed input to encoder
+        encoder_out = self.encoder(x)
+        # reverse output of encoder since last one processed first
+        encoder_out = encoder_out[::-1]
+        # Feed output of encoder to decoder to create segmentation mask
+        decoder_out = self.decoder(encoder_out)
+
+        return decoder_out
 
 
 if __name__ == '__main__':
 
-    # # Load a pre-trained ResNet-50 model
-    # resnet50 = models.resnet50(pretrained=True)
-
-    # print()
-    # for id, m_i in enumerate(resnet50.children()):
-    #     print('=' * 50)
-    #     print("child index: {}".format(id))
-    #     print(m_i)
-    #     input()
-    #     print('=' * 50)
 
     # Create an instance of the modified model
     model = ModifiedResNet50()
@@ -139,13 +199,14 @@ if __name__ == '__main__':
     outputs = model(input_tensor)
 
     # Outputs from each stage
-    stage1_output, stage2_output, stage3_output, stage4_output, stage5_output = outputs
+    encoder_output = outputs
+    
 
-    print(f"Stage 1 Output: {stage1_output.shape}")
-    print(f"Stage 2 Output: {stage2_output.shape}")
-    print(f"Stage 3 Output: {stage3_output.shape}")
-    print(f"Stage 4 Output: {stage4_output.shape}")
-    print(f"Stage 4 Output: {stage5_output.shape}")
+    print(f"Stage 1 Output: {encoder_output[0].shape}")
+    print(f"Stage 2 Output: {encoder_output[1].shape}")
+    print(f"Stage 3 Output: {encoder_output[2].shape}")
+    print(f"Stage 4 Output: {encoder_output[3].shape}")
+    print(f"Stage 4 Output: {encoder_output[4].shape}")
 
 
     dec_block = ConvDecoderBlock(in_channels=20, out_channels=10, skip_channel=5, last_block=True)
@@ -153,6 +214,21 @@ if __name__ == '__main__':
     skip_tensor = torch.randn(1, 5, 32, 32)
     output = dec_block(input_tensor, skip_tensor)
     print("")
-    print(f"Output: {output.shape}")
+    print(f"Decoder Block Output: {output.shape}")
 
+    list_in_channels = [2048, 1024, 512, 256, 64]
+    list_out_channels = list_in_channels[1::] + [1]
+    list_skip_channels = list_in_channels[1::] + [0]
+    dec_model = ConvDecoder(list_in_channels=list_in_channels, list_out_channels=list_out_channels, list_skip_channels=list_skip_channels, num_blocks=5)
 
+    encoder_output = encoder_output[::-1]
+    dec_output = dec_model(encoder_output)
+
+    print(f"Decoder Output: {dec_output.shape}")
+    
+
+    input_tensor = torch.randn(3, 3, 512, 512)
+    seg_model = UnetLikeSegmentatorModel()
+    seg_out = seg_model(input_tensor)
+
+    print(f"Segmentator Output: {seg_out.shape}")
