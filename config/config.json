@@ -17,5 +17,6 @@
 
     "train_max_epoch": 1,
     "train_init_lr": 1e-4,
+    "train_min_lr": 1e-7,
     "train_save_dir": "saved_model/best_model.pth"
 }
