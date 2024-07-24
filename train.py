@@ -53,10 +53,11 @@ def train_model(model, train_loader, val_loader, test_loader, num_epochs=25, lr=
 
         batch_i = 0
         total_batch = len(train_loader)
-
+        
         # For each batch in dataset
         for inputs, labels in train_loader:
-
+            
+            # Get a batch of data and move it to device 
             inputs, labels = inputs.to(device), labels.to(device)
             
             # Zero the parameter gradients

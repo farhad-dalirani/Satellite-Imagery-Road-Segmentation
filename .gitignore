@@ -4,3 +4,4 @@ data/massachusetts-roads-dataset/*
 todo.txt
 __pycache__/
 runs/J*
+saved_model/b*
