@@ -5,3 +5,4 @@ todo.txt
 __pycache__/
 runs/J*
 saved_model/b*
+output/[0-9]*

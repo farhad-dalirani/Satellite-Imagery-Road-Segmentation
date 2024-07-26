@@ -226,9 +226,9 @@ if __name__ == '__main__':
 
     print(f"Decoder Output: {dec_output.shape}")
     
-
-    input_tensor = torch.randn(3, 3, 512, 512)
-    seg_model = UnetLikeSegmentatorModel()
-    seg_out = seg_model(input_tensor)
+    with torch.no_grad():
+        input_tensor = torch.randn(3, 3, 512, 512)
+        seg_model = UnetLikeSegmentatorModel()
+        seg_out = seg_model(input_tensor)
 
     print(f"Segmentator Output: {seg_out.shape}")
