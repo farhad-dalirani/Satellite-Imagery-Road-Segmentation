@@ -1,13 +1,9 @@
 import json
-import numpy as np
-import math
 import os
 from PIL import Image
-import pandas as pd
 import torch
 from torch.utils.data import Dataset
 from torchvision import transforms
-import random
 import matplotlib.pyplot as plt
 from utils import tensor_image_to_pil_image, tensor_mask_to_pil_image
 from torch.utils.data import Dataset, DataLoader
@@ -89,8 +85,9 @@ class JointTransform:
             seed = torch.randint(0, 2**31, (1,)).item()
             torch.manual_seed(seed)
             img = self.joint_transform(img)
-            torch.manual_seed(seed)
-            mask = self.joint_transform(mask)
+            if mask is not None:
+                torch.manual_seed(seed)
+                mask = self.joint_transform(mask)
         
         if self.image_transform is not None:
             img = self.image_transform(img)

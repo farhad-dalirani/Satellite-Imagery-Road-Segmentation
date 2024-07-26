@@ -42,6 +42,8 @@ def tensor_mask_to_pil_image(tensor):
     Returns:
     - PIL.Image: The resulting PIL image.
     """
+    if tensor.is_cuda:
+        tensor = tensor.cpu()
 
     # Convert the tensor to a numpy array
     if len(tensor.shape) == 3:

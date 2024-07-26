@@ -1,17 +1,14 @@
 import os
 import json
 import torch
-import torch.nn as nn
 import torch.optim as optim
 import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
-from torchvision.datasets import ImageFolder
-from torchvision.transforms import Compose, ToTensor, Normalize
 from loss import DiceBCELoss
 from model import UnetLikeSegmentatorModel
 from dataset import MRDDataset, JointTransform
-from torch.optim.lr_scheduler import LambdaLR
+
 
 
 def train_model(model, train_loader, val_loader, test_loader, num_epochs=25, lr=1e-4, checkpoint_path='saved_model/best_model.pth'):
