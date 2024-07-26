@@ -10,13 +10,16 @@
     "test_overlap_between_patches": 0,
 
 
-    "train_batch_size": 1,
+    "train_batch_size": 16,
+    "test_batch_size": 16,
 
-    "test_batch_size": 1,
 
-
-    "train_max_epoch": 1,
+    "train_max_epoch": 30,
     "train_init_lr": 1e-4,
     "train_min_lr": 1e-7,
-    "train_save_dir": "saved_model/best_model.pth"
+    "train_save_dir": "saved_model/best_model.pth",
+
+    "deployment_patch_size": 512,
+    "deployment_overlap_between_patches": 28,
+    "deployment_batch_size": 2
 }
