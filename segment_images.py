@@ -42,13 +42,17 @@ def segment_image(config, model, image, device, img_transformations):
     assert((config['deployment_patch_size']//32) % 2 == 0)
 
     img_width, img_height = image.size
+    overlap_size = config['deployment_overlap_between_patches']
+    stride = config['deployment_patch_size']-overlap_size
 
+    if (config['deployment_patch_size'] >= img_width) and (config['deployment_patch_size'] >= img_height):
+        overlap_size = 0
+        stride = config['deployment_patch_size']
+        
     # crop image to smaller patches  instead of feeding whole 
     # stellite image to deal with limitation of edge devices
     patches_top_left = []
     list_patches_left_over = []
-    overlap_size = config['deployment_overlap_between_patches']
-    stride = config['deployment_patch_size']-overlap_size
     half_of_patches_overlap = overlap_size//2
     for y in range(0, img_height, stride):
         for x in range(0, img_width, stride):
