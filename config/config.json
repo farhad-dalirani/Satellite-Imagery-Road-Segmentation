@@ -20,6 +20,6 @@
     "train_save_dir": "saved_model/best_model.pth",
 
     "deployment_patch_size": 512,
-    "deployment_overlap_between_patches": 28,
-    "deployment_batch_size": 2
+    "deployment_overlap_between_patches": 256,
+    "deployment_batch_size": 1
 }

@@ -38,17 +38,36 @@ def segment_image(config, model, image, device, img_transformations):
     batches = []
     batch = []
 
-    width, height = image.size
+    assert(config['deployment_overlap_between_patches'] % 2 == 0)
+    assert((config['deployment_patch_size']//32) % 2 == 0)
+
+    img_width, img_height = image.size
 
     # crop image to smaller patches  instead of feeding whole 
     # stellite image to deal with limitation of edge devices
     patches_top_left = []
-    stride = config['deployment_patch_size']-config['deployment_overlap_between_patches']
-    for y in range(0, height, stride):
-        for x in range(0, width, stride):
+    list_patches_left_over = []
+    overlap_size = config['deployment_overlap_between_patches']
+    stride = config['deployment_patch_size']-overlap_size
+    half_of_patches_overlap = overlap_size//2
+    for y in range(0, img_height, stride):
+        for x in range(0, img_width, stride):
             
             # Keep top left coordinate for sticking patches back
             patches_top_left.append((x, y))
+            
+            # Leftover of each side of the image during patching (W, N, E, S).
+            # Since patches have overlap, we pick half of the overlap from the involved patches.            
+            left_over_image_i = [0, 0, 0, 0]
+            if 0 < x:
+                left_over_image_i[0] = half_of_patches_overlap
+            if x + config['deployment_patch_size'] < img_width - overlap_size:
+                left_over_image_i[2] = -half_of_patches_overlap
+            if 0 < y:
+                left_over_image_i[1] = half_of_patches_overlap
+            if y + config['deployment_patch_size'] < img_width - overlap_size:
+                left_over_image_i[3] = -half_of_patches_overlap
+            list_patches_left_over.append(left_over_image_i)
 
             # Crop image to get patch
             patch_k = image.crop((x, y, x+config['deployment_patch_size'], y+config['deployment_patch_size']))
@@ -81,12 +100,12 @@ def segment_image(config, model, image, device, img_transformations):
             list_patches_mask.append(pil_mask_i)
 
     # Put patches together
-    whole_mask = Image.new('RGB', (config['dataset_image_size'][0], config['dataset_image_size'][1]), (0, 0, 0))
-    size_kept_mask = config['deployment_patch_size'] - config['deployment_overlap_between_patches'] // 2
-    for top_left_i, output_patch_i in zip(patches_top_left, list_patches_mask):
+    whole_mask = Image.new('RGB', (config['dataset_image_size'][0], config['dataset_image_size'][1]), (255, 255, 255))
+    for top_left_i, left_over_i, output_patch_i in zip(patches_top_left, list_patches_left_over, list_patches_mask):
         x, y = top_left_i
         # put mask patch on its true position in while image
-        whole_mask.paste(output_patch_i.crop((0, 0, size_kept_mask, size_kept_mask)), (x, y))
+        whole_mask.paste(output_patch_i.crop((left_over_i[0], left_over_i[1], config['deployment_patch_size']+left_over_i[2], config['deployment_patch_size']+left_over_i[3])), 
+                         (x + left_over_i[0], y + left_over_i[1]))
 
     return whole_mask
 
