@@ -34,6 +34,9 @@ def segment_image(config, model, image, device, img_transformations):
         - The function handles the reconstruction of the segmented image by positioning the patches back into their 
           original locations.
         - Ensure that the `img_transformations` function is capable of handling and transforming image patches correctly.
+        - The patch method is used to handle large images that cannot be processed as a whole due to memory constraints. 
+          By dividing the image into smaller patches, the function ensures that each patch can be processed within the 
+          available memory, making the approach suitable for edge devices with limited resources.
     """ 
     batches = []
     batch = []
