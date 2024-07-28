@@ -57,6 +57,54 @@ class ModifiedResNet50(nn.Module):
         return x1, x2, x3, x4, x5
 
 
+class SCSEModule(nn.Module):
+    """
+    Squeeze and Channel/Spatial Excitation (SCSE) Module.
+
+    This module applies both channel and spatial attention mechanisms to the input tensor.
+    It is designed to enhance feature representation by recalibrating feature responses 
+    using squeeze-and-excitation blocks for both channels and spatial dimensions.
+
+    Args:
+        in_channels (int): Number of input channels.
+        reduction (int, optional): Reduction ratio for the channel squeeze. Default is 16.
+
+    Attributes:
+        cSE (nn.Sequential): Channel Squeeze-and-Excitation block.
+        sSE (nn.Sequential): Spatial Squeeze-and-Excitation block.
+
+    Methods:
+        forward(x):
+            Forward pass of the module.
+
+            Args:
+                x (torch.Tensor): Input tensor of shape (N, C, H, W).
+
+            Returns:
+                torch.Tensor: Output tensor after applying SCSE attention.
+    """
+
+    def __init__(self, in_channels, reduction=16):
+        super().__init__()
+
+        # Calculate attention score for each channel
+        self.cSE = nn.Sequential(
+            nn.AdaptiveAvgPool2d(1),
+            nn.Conv2d(in_channels, in_channels // reduction, 1),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(in_channels // reduction, in_channels, 1),
+            nn.Sigmoid(),
+        )
+
+        # Calculate attention score for each pixel in feature map (spatial)
+        self.sSE = nn.Sequential(nn.Conv2d(in_channels, 1, 1), nn.Sigmoid())
+
+    def forward(self, x):
+        channel_score = self.cSE(x)
+        pixel_score = self.sSE(x)
+        return x * channel_score + x * pixel_score
+
+
 class ConvDecoderBlock(nn.Module):
     """
     Building block of a Convolutional Decoder for image segmentation or similar tasks.
@@ -79,11 +127,14 @@ class ConvDecoderBlock(nn.Module):
 
         self.conv1 = nn.Conv2d(in_channels=in_channels+skip_channel, out_channels=out_channels, kernel_size=3, padding=1)
         self.bn1 = nn.BatchNorm2d(out_channels)
+        if skip_channel != 0:
+            self.atten1 = SCSEModule(in_channels=in_channels+skip_channel)
 
         self.conv2 = nn.Conv2d(in_channels=out_channels, out_channels=out_channels, kernel_size=3, padding=1)
         if self.last_block == False:
             self.bn2 = nn.BatchNorm2d(out_channels)
-
+            self.atten2 = SCSEModule(in_channels=out_channels)
+        
         self.act = nn.ReLU()
 
     def forward(self, x, skip=None):
@@ -94,16 +145,17 @@ class ConvDecoderBlock(nn.Module):
         # Concatenate feature map from encoder
         if skip is not None:
             x = torch.cat([x, skip], dim=1)
+            x = self.atten1(x)
 
         x = self.conv1(x)
         x = self.act(x)
         x = self.bn1(x)
 
         x = self.conv2(x)
-        
         if self.last_block == False:
             x = self.act(x)
             x = self.bn2(x)
+            x = self.atten2(x)
 
         return x
 
