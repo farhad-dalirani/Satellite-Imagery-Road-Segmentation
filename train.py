@@ -231,3 +231,14 @@ if __name__ == '__main__':
     test_ds = MRDDataset(
                     image_dir=os.path.join(config['data_dir'], '{}_patched'.format(set_i)), 
                     label_dir=os.path.join(config['data_dir'], '{}_labels_patched'.format(set_i)),
+                    images_wh=tuple(config['dataset_image_size']),
+                    transformas=test_transformations)
+    # Test dataloader
+    dataloader_test = DataLoader(dataset=test_ds, batch_size=config["train_batch_size"], shuffle=False, num_workers=2)
+    print("Number of batches: {}".format(len(dataloader_test)))
+
+    # Initialize the model
+    model = UnetLikeSegmentatorModel()
+
+    # Train the model
+    train_model(model, dataloader_train, dataloader_val, dataloader_test, num_epochs=config['train_max_epoch'], lr=config['train_init_lr'], checkpoint_path=config['train_save_dir'])
