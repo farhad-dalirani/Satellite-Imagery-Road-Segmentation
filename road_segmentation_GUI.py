@@ -18,7 +18,7 @@ def main():
 
     This application allows users to upload a satellite image and perform road segmentation
     using a U-Net-like deep neural network. The model utilizes a modified ResNet-50 as the encoder
-    and a CNN decoder head. The segmentation task addresses binary imbalance using a combined 
+    and a CNN with SCSE attention decoder head. The segmentation task addresses binary imbalance using a combined 
     Dice and Binary Cross-entropy loss function. Large satellite images are patchified during 
     training and deployment.
 
@@ -52,7 +52,7 @@ def main():
 
         - **U-Net-like deep neural network architecture**
         - **Modified ResNet-50 as the encoder**
-        - **CNN decoder head**
+        - **CNN with SCSE attention decoder head**
         - **Combined Dice and Binary Cross-entropy loss** for binary imbalance segmentation tasks
         - **Patchifying input images** during training and deployment to handle very large satellite images
                      

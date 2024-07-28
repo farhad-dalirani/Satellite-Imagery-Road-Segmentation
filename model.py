@@ -112,7 +112,8 @@ class ConvDecoderBlock(nn.Module):
     This block consists of two convolutional layers, each followed by a Batch Normalization layer
     and a ReLU activation function. The first convolutional layer also handles the concatenation 
     of skip connections from the encoder. This block can optionally be the last block in the decoder,
-    in which case it omits the second Batch Normalization layer.
+    in which case it omits the second Batch Normalization layer. Moreover, each block also has two 
+    SCSE attention layers (spatial and channel attention).
     
     Attributes:
     - in_channels (int): Number of input channels.
