@@ -13,15 +13,52 @@ st.set_page_config(layout="wide")
 
 # Main function
 def main():
+    """
+    Streamlit application for Road Segmentation on Satellite Imagery.
+
+    This application allows users to upload a satellite image and perform road segmentation
+    using a U-Net-like deep neural network. The model utilizes a modified ResNet-50 as the encoder
+    and a CNN decoder head. The segmentation task addresses binary imbalance using a combined 
+    Dice and Binary Cross-entropy loss function. Large satellite images are patchified during 
+    training and deployment.
+
+    The model is trained on the Massachusetts Roads Dataset to identify road structures in 
+    high-resolution images, providing a segmented output that highlights the road network.
+
+    Functions:
+        main():
+            The main function to run the Streamlit application. It contains the following components:
+            
+            - Title: Displays the title of the application.
+            - Sidebar: Provides a project description and details about the model architecture and training.
+            - File Uploader: Allows users to upload a satellite image for segmentation.
+            - Buttons:
+                - Segment: Segments the uploaded image and displays the segmentation mask.
+                - Save Output: Saves the segmented image to the specified path.
+            - Image Display: Displays the uploaded image and the segmentation mask.
+
+    Usage:
+        Run this script using Streamlit to start the application:
+        $ streamlit run road_segmentation_GUI.py
+    """
+
     st.title("Road Segmentation on Satellite Imagery")
 
     # Sidebar for project description
-    st.sidebar.title("Project Description")
     st.sidebar.write("""
-        This project focuses on road segmentation from satellite imagery using a U-Net-like deep learning model.
-        The model is trained to identify road structures in high-resolution images, providing a segmented output
-        that highlights the road network.
-    """)
+        ### Road Semantic Segmentation from Satellite Imagery
+
+        This project involves:
+
+        - **U-Net-like deep neural network architecture**
+        - **Modified ResNet-50 as the encoder**
+        - **CNN decoder head**
+        - **Combined Dice and Binary Cross-entropy loss** for binary imbalance segmentation tasks
+        - **Patchifying input images** during training and deployment to handle very large satellite images
+                     
+
+        The model is trained on the **Massachusetts Roads Dataset** to identify road structures in high-resolution images, providing a segmented output that highlights the road network.
+        """)
 
     # Select a file
     uploaded_file = st.file_uploader("Choose an image...", type=["jpg", "jpeg", "png", "tiff", "tif"])
