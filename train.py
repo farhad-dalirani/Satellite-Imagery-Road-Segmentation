@@ -9,44 +9,7 @@ from loss import DiceBCELoss
 from model import UnetLikeSegmentatorModel
 from dataset import MRDDataset, JointTransform
 
-def dice_score(pred, target, smooth=1e-6):
-    """
-    Computes the Dice score for binary segmentation tasks.
 
-    The Dice score is a measure of overlap between two samples. It ranges from 0 (no overlap) to 1 (perfect overlap). 
-    This function is useful for evaluating the performance of binary segmentation models.
-
-    Args:
-        pred (torch.Tensor): The predicted tensor with values in range [0, 1]. It is converted to binary (0 or 1) using a threshold of 0.5.
-        target (torch.Tensor): The ground truth tensor with binary values (0 or 1).
-        smooth (float, optional): A small constant added to the numerator and denominator to avoid division by zero. Default is 1e-6.
-
-    Returns:
-        float: The Dice score, a value between 0 and 1.
-    """
-    pred = torch.sigmoid(pred)
-    pred = (pred > 0.5).float()
-    intersection = (pred * target).sum()
-    return (2. * intersection + smooth) / (pred.sum() + target.sum() + smooth)
-
-def iou_score(pred, target, smooth=1e-6):
-    """
-    Computes the Intersection over Union (IoU) score.
-
-    Args:
-        pred (torch.Tensor): Predicted tensor, typically the output of a segmentation model.
-        target (torch.Tensor): Ground truth tensor.
-        smooth (float, optional): Smoothing constant to avoid division by zero. Default is 1e-6.
-
-    Returns:
-        float: IoU score.
-    """
-    # Apply sigmoid to the predictions to get probabilities
-    pred = torch.sigmoid(pred)
-    pred = (pred > 0.5).float()
-    intersection = (pred * target).sum()
-    union = pred.sum() + target.sum() - intersection
-    return (intersection + smooth) / (union + smooth)
 
 def train_model(model, train_loader, val_loader, test_loader, num_epochs=25, lr=1e-4, checkpoint_path='saved_model/best_model.pth'):
     """
@@ -68,7 +31,7 @@ def train_model(model, train_loader, val_loader, test_loader, num_epochs=25, lr=
     model.to(device)
 
     # Define loss function and optimizer
-    criterion = DiceBCELoss()
+    criterion = DiceBCELoss()  
     optimizer = optim.Adam(model.parameters(), lr=lr)
     
     # Define the scheduler
@@ -118,8 +81,6 @@ def train_model(model, train_loader, val_loader, test_loader, num_epochs=25, lr=
         # Validation phase
         model.eval()
         val_loss = 0.0
-        dice_score_total = 0.0
-        iou_score_total = 0.0
 
         with torch.no_grad():
             for inputs, labels in val_loader:
@@ -127,17 +88,10 @@ def train_model(model, train_loader, val_loader, test_loader, num_epochs=25, lr=
                 outputs = model(inputs)
                 loss = criterion(outputs, labels)
                 val_loss += loss.item() * inputs.size(0)
-                dice_score_total += dice_score(outputs, labels) * inputs.size(0)
-                iou_score_total += iou_score(outputs, labels) * inputs.size(0)
         
         val_loss = val_loss / len(val_loader.dataset)
-        avg_dice_score = dice_score_total / len(val_loader.dataset)
-        avg_iou_score = iou_score_total / len(val_loader.dataset)
-
         writer.add_scalar('Validation Loss', val_loss, epoch)
-        writer.add_scalar('Validation Dice Score', avg_dice_score, epoch)
-        writer.add_scalar('Validation IoU Score', avg_iou_score, epoch)
-        print(f"Validation Loss: {val_loss:.4f}, Dice Score: {avg_dice_score:.4f}, IoU Score: {avg_iou_score:.4f}")
+        print(f"Validation Loss: {val_loss:.4f}")
 
         # Save best model weights
         if val_loss < best_val_loss:
@@ -156,8 +110,6 @@ def train_model(model, train_loader, val_loader, test_loader, num_epochs=25, lr=
     model.load_state_dict(torch.load(checkpoint_path))
     model.eval()
     test_loss = 0.0
-    dice_score_total = 0.0
-    iou_score_total = 0.0
 
     with torch.no_grad():
         for inputs, labels in test_loader:
@@ -165,17 +117,10 @@ def train_model(model, train_loader, val_loader, test_loader, num_epochs=25, lr=
             outputs = model(inputs)
             loss = criterion(outputs, labels)
             test_loss += loss.item() * inputs.size(0)
-            dice_score_total += dice_score(outputs, labels) * inputs.size(0)
-            iou_score_total += iou_score(outputs, labels) * inputs.size(0)
     
     test_loss = test_loss / len(test_loader.dataset)
-    avg_dice_score = dice_score_total / len(test_loader.dataset)
-    avg_iou_score = iou_score_total / len(test_loader.dataset)
-
     writer.add_scalar('Test Loss', test_loss, num_epochs)
-    writer.add_scalar('Test Dice Score', avg_dice_score, num_epochs)
-    writer.add_scalar('Test IoU Score', avg_iou_score, num_epochs)
-    print(f"Test Loss: {test_loss:.4f}, Dice Score: {avg_dice_score:.4f}, IoU Score: {avg_iou_score:.4f}")
+    print(f"Test Loss: {test_loss:.4f}")
 
     writer.close()
 
