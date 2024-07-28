@@ -30,37 +30,46 @@ def main():
         # Store the uploaded image in session state
         st.session_state['input_image'] = Image.open(uploaded_file)
 
-        col1, col2 = st.columns(2)
+        # Container for buttons
+        button_container = st.container()
 
-        with col1:
-            if st.button('Segment', use_container_width=True):
-                # Segment image and get segmentation mask in PIL image format
-                st.session_state['segmentation_mask'] = segment_image(
-                    config=st.session_state['config'],
-                    model=st.session_state['segmentation_model'], 
-                    image=st.session_state['input_image'], 
-                    device=st.session_state['device'], 
-                    img_transformations=st.session_state['test_transformations'])
+        # Row for buttons
+        with button_container:
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button('Segment', use_container_width=True):
+                    # Segment image and get segmentation mask in PIL image format
+                    st.session_state['segmentation_mask'] = segment_image(
+                        config=st.session_state['config'],
+                        model=st.session_state['segmentation_model'], 
+                        image=st.session_state['input_image'], 
+                        device=st.session_state['device'], 
+                        img_transformations=st.session_state['test_transformations'])
 
-        # Display the uploaded image in the first column
-        with col1:
-            st.image(st.session_state['input_image'], caption='Uploaded Image.', use_column_width=True)
-
-        # Display save option and segmented image in the second column
-        if 'segmentation_mask' in st.session_state:
             with col2:
                 save_path = st.text_input("Enter save path:", value="segmented_image.png")
                 if st.button('Save Output', use_container_width=True):
                     if save_path:
-                        
                         # Create the directory if it does not exist
                         directory = os.path.dirname(save_path)
-                        if (len(directory) != 0) and (directory is not os.path.exists(directory)):
+                        if (len(directory) != 0) and (not os.path.exists(directory)):
                             os.makedirs(directory)
 
                         st.session_state['segmentation_mask'].save(save_path)
                         st.success(f"Image saved to {save_path}")
-                st.image(st.session_state['segmentation_mask'], caption='Segmented Image.', use_column_width=True)
+
+        # Container for images
+        image_container = st.container()
+
+        # Row for images
+        with image_container:
+            col1, col2 = st.columns(2)
+            with col1:
+                st.image(st.session_state['input_image'], caption='Uploaded Image.', use_column_width=True)
+
+            if 'segmentation_mask' in st.session_state:
+                with col2:
+                    st.image(st.session_state['segmentation_mask'], caption='Segmented Image.', use_column_width=True)
 
 
 if __name__ == '__main__':
