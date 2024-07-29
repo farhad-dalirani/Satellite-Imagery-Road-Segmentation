@@ -50,12 +50,11 @@ def main():
 
         This project involves:
 
-        - **U-Net-like deep neural network architecture**
-        - **Modified ResNet-50 as the encoder**
-        - **CNN with SCSE attention decoder head**
-        - **Combined Dice and Binary Cross-entropy loss** for binary imbalance segmentation tasks
-        - **Patchifying input images** during training and deployment to handle very large satellite images
-                     
+        - **U-Net-like** deep neural network architecture for semantic segmentation.
+        - **Encoder**: Pre-trained **ResNet-50**, modified to output each stage's hierarchical feature maps.
+        - **Decoder**: Consists of interpolation, convolutional layers, and **SCSE attention**.
+        - **Loss**: Combined **Dice and Binary Cross-entropy loss** for the binary imbalance segmentation task.
+        - **Patchifying input images** during training and deployment to handle very large satellite images.     
 
         The model is trained on the **Massachusetts Roads Dataset** to identify road structures in high-resolution images, providing a segmented output that highlights the road network.
         """)
