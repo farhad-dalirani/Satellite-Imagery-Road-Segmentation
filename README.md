@@ -8,7 +8,7 @@ This project involves semantic segmentation of road networks in high-resolution 
 
 - **U-Net-like Architecture**: Designed for effective semantic segmentation.
 - **Encoder**: Utilizes a pre-trained **ResNet-50**, modified to output feature maps at each stage to leverage both strong localization and semantic features.
-- **Decoder**: Composed of interpolation, convolutional layers, and **SCSE attention** mechanisms (spatial and channel attention).
+- **Decoder**: Composed of interpolation, convolutional layers, and **SCSE attention** mechanisms (Squeeze and Channel/Spatial Excitation).
 - **Loss Function**: Combined **Dice** and **Binary Cross-entropy loss** to address the imbalance binary classes in segmentation tasks.
 - **Patchifying Input Images**: Both during training and deployment to handle very large satellite images efficiently. During testing, the input image is divided into overlapping patches to manage the memory limitations of edge devices. By repositioning the patches back into their original locations, it reconstructs the segmentation mask for the entire large input image. As a result, it can segment **arbitrarily large** satellite images.
 - A user-friendly **GUI** to load, display, segment and save very large images.
